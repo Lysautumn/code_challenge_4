@@ -9,6 +9,7 @@ var pool = new pg.Pool(config); // DO NOT MODIFY
 
 // GET /treats
 router.get('/', function (req, res) {
+
   pool.connect(function (err, client, done) {
     if (err) {
       console.log('Error connecting to the DB', err);
@@ -16,18 +17,41 @@ router.get('/', function (req, res) {
       done();
       return;
     }
+    if (req.query.q) {
+      // It's the eye of the tiger, it's the thrill of the fight
+        var search = req.query.q;
+        pool.connect(function (err, client, done) {
+          if (err) {
+            console.log('Error connecting to the DB', err);
+            res.sendStatus(500);
+            done();
+            return;
+          }
+          client.query('SELECT * FROM treats WHERE name=$1;', [search], function (err, result) {
+            done();
+            if (err) {
+              console.log('Error querying the DB', err);
+              res.sendStatus(500);
+              return;
+            }
+            console.log('Got rows from the DB:', result.rows);
+            res.send(result.rows);
+          });
+        });
+    } else {
+      client.query('SELECT * FROM treats;', function (err, result) {
+        done();
+        if (err) {
+          console.log('Error querying the DB', err);
+          res.sendStatus(500);
+          return;
+        }
 
-    client.query('SELECT * FROM treats;', function (err, result) {
-      done();
-      if (err) {
-        console.log('Error querying the DB', err);
-        res.sendStatus(500);
-        return;
-      }
+        console.log('Got rows from the DB:', result.rows);
+        res.send(result.rows);
+      });
+    }
 
-      console.log('Got rows from the DB:', result.rows);
-      res.send(result.rows);
-    });
   });
 });
 
@@ -108,28 +132,7 @@ router.delete('/:id', function(req, res) {
   });
 });
 
-// It's the eye of the tiger, it's the thrill of the fight
-router.get('/', function (req, res) {
-  var search = req.query.q;
-  pool.connect(function (err, client, done) {
-    if (err) {
-      console.log('Error connecting to the DB', err);
-      res.sendStatus(500);
-      done();
-      return;
-    }
-    client.query('SELECT * FROM treats WHERE name=$1;', [search], function (err, result) {
-      done();
-      if (err) {
-        console.log('Error querying the DB', err);
-        res.sendStatus(500);
-        return;
-      }
-      console.log('Got rows from the DB:', result.rows);
-      res.send(result.rows);
-    });
-  });
-});
+
 
 /** ---- DO NOT MODIFY BELOW ---- **/
 module.exports = router;
